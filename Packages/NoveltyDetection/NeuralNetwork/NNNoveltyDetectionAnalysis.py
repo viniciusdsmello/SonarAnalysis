@@ -59,7 +59,7 @@ class NNNoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
                                                    )
             
     def train(self, model_hash="", inovelty=0, trainingType="normal", ifold=0, hidden_neurons=[1],
-              neurons_variation_step=50, layer=1, numThreads=num_processes):
+              neurons_variation_step=50, layer=1, numThreads=num_processes, verbose=True):
         startTime = time.time()
 
         hiddenNeuronsStr = str(hidden_neurons[0])
@@ -71,14 +71,14 @@ class NNNoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
             layer, inovelty, numThreads, trainingType, hiddenNeuronsStr, neurons_variation_step, model_hash)
         print(sysCall)
         os.system(sysCall)
-        
-        duration = str(timedelta(seconds=float(time.time() - startTime)))
-        message = "Technique: {}\n".format(self.parameters["Technique"])
-        message = message + "Training Type: Neuron Sweep\n"
-        message = message + "Novelty Class: {}\n".format(self.class_labels[inovelty])
-        message = message + "Hash: {}\n".format(model_hash)
-        message = message + "Duration: {}\n".format(duration)
-        try:
-            my_bot.sendMessage(message)
-        except Exception as e:
-            print("Erro ao enviar mensagem. Erro: " + str(e))
+        if verbose:
+            duration = str(timedelta(seconds=float(time.time() - startTime)))
+            message = "Technique: {}\n".format(self.parameters["Technique"])
+            message = message + "Training Type: Neuron Sweep\n"
+            message = message + "Novelty Class: {}\n".format(self.class_labels[inovelty])
+            message = message + "Hash: {}\n".format(model_hash)
+            message = message + "Duration: {}\n".format(duration)
+            try:
+                my_bot.sendMessage(message)
+            except Exception as e:
+                print("Erro ao enviar mensagem. Erro: " + str(e))
