@@ -91,6 +91,8 @@ class NoveltyDetectionAnalysis:
     def setOutputFolders(self):
         self.analysis_output_folder = os.path.join(self.baseResultsPath, "AnalysisFiles")
         self.pictures_output_folder = os.path.join(self.baseResultsPath, "Pictures")
+        self.models_output_folder = os.path.join(self.baseResultsPath, "Models")
+        self.logs_output_folder = os.path.join(self.baseResultsPath, "Logs")
 
         if not os.path.exists(self.baseResultsPath):
             print("Creating " + self.baseResultsPath)
@@ -103,6 +105,14 @@ class NoveltyDetectionAnalysis:
         if not os.path.exists(self.pictures_output_folder):
             print("Creating " + self.pictures_output_folder)
             os.makedirs(self.pictures_output_folder)
+
+        if not os.path.exists(self.models_output_folder):
+            print("Creating " + self.models_output_folder)
+            os.makedirs(self.models_output_folder)
+
+        if not os.path.exists(self.logs_output_folder):
+            print("Creating " + self.logs_output_folder)
+            os.makedirs(self.logs_output_folder)
     
     def setDatabaseParameters(self):
         # Save parameters file
@@ -306,6 +316,14 @@ class NoveltyDetectionAnalysis:
     def get_analysis_zip(self):
         shutil.make_archive(self.analysis_output_folder, 'zip', self.analysis_output_folder)
         return self.analysis_output_folder + ".zip"
+
+    def get_models_zip(self):
+        shutil.make_archive(self.models_output_folder, 'zip', self.models_output_folder)
+        return self.models_output_folder + ".zip"
+
+    def get_logs_zip(self):
+        shutil.make_archive(self.logs_output_folder, 'zip', self.logs_output_folder)
+        return self.logs_output_folder + ".zip"
 
     def relative_auc(self, x, y, xlim=[0, 1], ylim=[0, 1]):
         total_area = (xlim[1] - xlim[0]) * (ylim[1] - ylim[0])

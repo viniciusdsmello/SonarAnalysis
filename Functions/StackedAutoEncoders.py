@@ -24,13 +24,14 @@ from Functions.lossWeights import getGradientWeights
 
 import multiprocessing
 
-num_processes = multiprocessing.cpu_count()
 
-# import tensorflow as tf
-# from keras.backend import tensorflow_backend as K
-# with tf.Session(config=tf.ConfigProto(
-#                    intra_op_parallelism_threads=2)) as sess:
-#    K.set_session(sess)
+
+num_processes = multiprocessing.cpu_count()
+import tensorflow as tf
+from keras.backend import tensorflow_backend as K
+# with tf.Session(config=tf.ConfigProto(intra_op_parallelism_threads=2)) as sess:
+# with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+#     K.set_session(sess)
 
 
 # noinspection PyUnusedLocal

@@ -33,6 +33,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 class NeuralNetworks:
     def __init__(self, parameters=None, save_path='', CVO=None, inovelty=0, verbose=False):
         self.save_path = save_path
+        self.model_save_path = os.path.join(save_path, "Models")
+        self.logs_save_path = os.path.join(save_path, "Logs")
+        
         self.inovelty = inovelty
         self.parameters = parameters
         self.verbose = verbose
@@ -102,7 +105,7 @@ class NeuralNetworks:
         
         neurons_str = self.get_neurons_str(data, hidden_neurons[:layer])
 
-        previous_model_str = os.path.join(self.save_path, self.prefix_str + "_{}_neurons".format(neurons_str))
+        previous_model_str = os.path.join(self.models_save_path, self.prefix_str + "_{}_neurons".format(neurons_str))
 
         file_name = '%s_fold_%i_model.h5' % (previous_model_str, ifold)
 
@@ -135,7 +138,7 @@ class NeuralNetworks:
 
         neurons_str = self.get_neurons_str(data, hidden_neurons[:layer])
 
-        model_str = os.path.join(self.save_path, self.prefix_str + "_{}_neurons".format(neurons_str))
+        model_str = os.path.join(self.models_save_path, self.prefix_str + "_{}_neurons".format(neurons_str))
 
         trgt_sparse = np_utils.to_categorical(trgt.astype(int))
     
@@ -252,7 +255,9 @@ class NeuralNetworks:
         # save model
         file_name = '%s_fold_%i_model.h5' % (model_str, ifold)
         classifier.save(file_name)
-        file_name = '%s_fold_%i_trn_desc.jbl' % (model_str, ifold)
+        
+        # save train history
+        file_name = '%s_fold_%i_trn_desc.jbl' % (os.path.join(self.logs_save_path, self.prefix_str + "_{}_neurons".format(neurons_str)), ifold)
         joblib.dump([trn_desc], file_name, compress=9)
 
         return ifold, classifier, trn_desc

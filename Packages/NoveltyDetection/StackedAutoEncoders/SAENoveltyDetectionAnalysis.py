@@ -6,6 +6,11 @@
 """
 import os
 import sys
+import time
+from datetime import datetime, timedelta
+
+sys.path.insert(0, '..')
+
 import pickle
 import numpy as np
 import time
@@ -13,15 +18,12 @@ import string
 import json
 import multiprocessing
 
-from datetime import timedelta
-
 from keras.utils import np_utils
 from sklearn.externals import joblib
-from sklearn import preprocessing
 
-from Packages.NoveltyDetection.NoveltyDetectionAnalysis import NoveltyDetectionAnalysis
-
+from NoveltyDetectionAnalysis import NoveltyDetectionAnalysis
 from Functions.StackedAutoEncoders import StackedAutoEncoders
+
 from Functions.telegrambot import Bot
 
 my_bot = Bot("lisa_thebot")

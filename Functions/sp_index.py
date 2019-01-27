@@ -7,3 +7,5 @@ def sp_index(y_true, y_pred):
     sp = np.sqrt(np.sum(recall) / num_classes *
                  np.power(np.prod(recall), 1.0 / float(num_classes)))
     return sp
+
+
