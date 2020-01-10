@@ -15,7 +15,7 @@ def add_subplot_axes(ax,rect,axisbg='w'):
     y = infig_position[1]
     width *= rect[2]
     height *= rect[3]  # <= Typo was here
-    subax = fig.add_axes([x,y,width,height],axisbg=axisbg)
+    subax = fig.add_axes([x,y,width,height])
     x_labelsize = subax.get_xticklabels()[0].get_size()
     y_labelsize = subax.get_yticklabels()[0].get_size()
     x_labelsize *= rect[2]**0.5

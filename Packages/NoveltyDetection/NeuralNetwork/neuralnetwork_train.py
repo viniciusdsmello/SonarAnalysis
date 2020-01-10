@@ -60,12 +60,8 @@ elif (trainingType == "neuronSweep"):
                                    hidden_neurons = hidden_neurons[:layer-1] + [ineuron],
                                    layer = layer
                                    )
-        p = multiprocessing.Pool(processes=num_processes)
-
-        results = p.map(train, range(analysis.n_folds))
-
-        p.close()
-        p.join()
+        with multiprocessing.Pool(processes=num_processes) as p:
+            results = p.map(train, range(analysis.n_folds))
 elif (trainingType == "layerSweep"):
     for ifold in range (analysis.n_folds):
         def train(ilayer):
@@ -75,12 +71,8 @@ elif (trainingType == "layerSweep"):
                                    hidden_neurons = hidden_neurons[:ilayer-1],
                                    layer = ilayer
                                    )
-        p = multiprocessing.Pool(processes=num_processes)
-
-        results = p.map(train, range(1,layer+1))
-
-        p.close()
-        p.join()
+        with multiprocessing.Pool(processes=num_processes) as p:
+            results = p.map(train, range(1,layer+1))
 elif (trainingType == "foldSweep"):
     def train(fold):
         models[inovelty].train(data  = trn_data[inovelty],
@@ -89,12 +81,8 @@ elif (trainingType == "foldSweep"):
                                hidden_neurons = hidden_neurons,
                                layer = layer
                                )
-    p = multiprocessing.Pool(processes=num_processes)
-
-    results = p.map(train, range(analysis.n_folds))
-
-    p.close()
-    p.join()
+    with multiprocessing.Pool(processes=num_processes) as p:
+        results = p.map(train, range(analysis.n_folds))
 else:
     print("[-] %s is not set as a type of training"%trainingType)
     exit()

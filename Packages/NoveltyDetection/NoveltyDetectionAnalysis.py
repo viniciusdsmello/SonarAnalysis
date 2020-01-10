@@ -71,7 +71,7 @@ class NoveltyDetectionAnalysis:
         self.parameters = parameters
         # Set the hash of the JSON text with the parameters
         self.model_hash = hashlib.sha256(json.dumps(parameters).encode(encoding='UTF-8')).hexdigest()
-        self.baseResultsPath = os.path.join(self.RESULTS_PATH, self.parameters["Technique"], "outputs", self.model_hash)
+        self.baseResultsPath = os.path.join(self.RESULTS_PATH, parameters["Technique"], "outputs", self.model_hash)
         self.parameters_file = os.path.join(self.baseResultsPath, "parameters.json")
 
         self.setOutputFolders()
@@ -329,7 +329,7 @@ class NoveltyDetectionAnalysis:
         total_area = (xlim[1] - xlim[0]) * (ylim[1] - ylim[0])
         rel_area = metrics.auc(x, y) / total_area
         return rel_area
-
+    ## TO DO
     def get_figures_of_merit(self, known_output=[], known_target=[], novelty_output=[], thr_mat=[], inovelty=0, ifold=0):
         class_eff_mat = np.zeros([self.n_folds,len(np.unique(self.all_trgt)),len(np.unique(self.all_trgt)),len(thr_mat)])
         novelty_eff_mat = np.zeros([self.n_folds,len(np.unique(self.all_trgt)),len(thr_mat)])
@@ -351,6 +351,6 @@ class NoveltyDetectionAnalysis:
             novelty_eff_mat[ifold, inovelty, ithr] = float(sum(1-(novelty_output>thr_value).any(axis=1)))/float(len(novelty_output))
             known_acc_mat[ifold, inovelty, ithr] = np.mean(buff,axis=0)
             known_sp_mat[ifold, inovelty, ithr]= (np.sqrt(np.mean(buff,axis=0)*np.power(np.prod(buff),1./float(len(buff)))))
-            known_trig_mat[ifold, inovelty, ithr]=float(sum(np.max(output,axis=1)>thr_value))/float(len(output))
+            known_trig_mat[ifold, inovelty, ithr]=float(sum(np.max(known_output,axis=1)>thr_value))/float(len(known_output))
             
-            return class_eff_mat, novelty_eff_mat, known_acc_mat, known_sp_mat, known_trig_mat
+        return class_eff_mat, novelty_eff_mat, known_acc_mat, known_sp_mat, known_trig_mat

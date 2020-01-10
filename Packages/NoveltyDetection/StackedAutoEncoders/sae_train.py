@@ -22,7 +22,7 @@ trainingType = args.type
 step = int(args.neuronsVariationStep)
 layer = int(args.layer)
 
-from Packages.NoveltyDetection.StackedAutoEncoders.SAENoveltyDetectionAnalysis import SAENoveltyDetectionAnalysis
+from SAENoveltyDetectionAnalysis import SAENoveltyDetectionAnalysis
 
 training_parameters = {"Technique": "StackedAutoEncoder"}
 

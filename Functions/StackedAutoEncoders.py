@@ -65,12 +65,18 @@ class StackedAutoEncoders:
         else:
             self.optmizer = self.parameters["OptmizerAlgorithm"]["name"]
 
-        # Choose loss functions
+        # Choose loss functions for pre-training
         if self.parameters["HyperParameters"]["loss"] == "kullback_leibler_divergence":
             self.lossFunction = kullback_leibler_divergence
         else:
             self.lossFunction = self.parameters["HyperParameters"]["loss"]
+        
         losses.custom_loss = self.lossFunction
+        # Choose loss functions for fine-tuning
+        if self.parameters["HyperParameters"]["classifier_loss"] == "kullback_leibler_divergence":
+            self.classifier_lossFunction = kullback_leibler_divergence
+        else:
+            self.classifier_lossFunction = self.parameters["HyperParameters"]["classifier_loss"]
 
     # Method that creates a string in the format: (InputDimension)x(1º Layer Dimension)x...x(Nº Layer Dimension)
     @staticmethod
@@ -147,9 +153,17 @@ class StackedAutoEncoders:
 
                 layer_models[ilayer] = load_model(file_name, custom_objects={
                     '%s' % self.parameters["HyperParameters"]["loss"]: self.lossFunction})
-
-                layer_encoder_weights[ilayer] = layer_models[ilayer].get_layer("dense_{}".format(ilayer)).get_weights()
-                layer_decoder_weights[ilayer] = layer_models[ilayer].get_layer("dense_{}".format(ilayer+1)).get_weights()
+                
+                if ilayer == 1:
+                    encoder_layer = 1
+                    decoder_layer = 2
+                else:
+                    encoder_layer = 2*ilayer
+                    decoder_layer = 2*ilayer+1
+#                 print(layer_models[ilayer].summary())
+                
+                layer_encoder_weights[ilayer] = layer_models[ilayer].get_layer(index=0).get_weights()
+                layer_decoder_weights[ilayer] = layer_models[ilayer].get_layer(index=2).get_weights()
 
             model = Sequential()
             # Encoder
@@ -261,7 +275,7 @@ class StackedAutoEncoders:
 
         for i_init in range(self.parameters["HyperParameters"]["n_inits"]):
             print('Autoencoder - Layer: %i - Topology: %s - Fold %i of %i Folds -  Init %i of %i Inits' % (layer,
-                                                                                                           neurons_str,
+                                                                                                           self.get_neurons_str(data, hidden_neurons[:layer]),
                                                                                                            ifold + 1,
                                                                                                            self.parameters["HyperParameters"]["n_folds"],
                                                                                                            i_init + 1,
@@ -426,7 +440,7 @@ class StackedAutoEncoders:
         file_name = '%s_fold_%i_model.h5' % (model_str, ifold)
         try:
             classifier = load_model(file_name, custom_objects={
-                '%s' % self.parameters["HyperParameters"]["loss"]: self.lossFunction})
+                '%s' % self.parameters["HyperParameters"]["classifier_loss"]: self.classifier_lossFunction})
         except:
             print('[-] Error: File or Directory not found. Path: {}'.format(file_name))
             ifold, classifier, trn_desc = self.train_classifier(data=data, trgt=trgt, ifold=ifold, hidden_neurons=hidden_neurons, layer=layer)
@@ -460,7 +474,7 @@ class StackedAutoEncoders:
             # load model
             file_name = '%s_fold_%i_model.h5' % (model_str, ifold)
             classifier = load_model(file_name, custom_objects={
-                '%s' % self.parameters["HyperParameters"]["loss"]: self.lossFunction})
+                '%s' % self.parameters["HyperParameters"]["classifier_loss"]: self.classifier_lossFunction})
             file_name = '%s_fold_%i_trn_desc.jbl' % (model_str, ifold)
             trn_desc = joblib.load(file_name)
             return ifold, classifier, trn_desc
@@ -520,7 +534,7 @@ class StackedAutoEncoders:
                             kernel_initializer=self.parameters["HyperParameters"]["kernel_initializer"]))
             model.add(Activation(self.parameters["HyperParameters"]["classifier_output_activation_function"]))
 
-            model.compile(loss=self.lossFunction,
+            model.compile(loss=self.classifier_lossFunction,
                           optimizer=self.optmizer,
                           metrics=self.parameters["HyperParameters"]["metrics"])
             # Train model

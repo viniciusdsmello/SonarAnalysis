@@ -29,4 +29,3 @@ if not os.path.exists(CONFIG["OUTPUTDATAPATH"]):
 # Add the Packages directory to System Path for import
 if os.path.join(CONFIG["SONAR_WORKSPACE"]) not in sys.path:
     sys.path.append(os.path.join(CONFIG["SONAR_WORKSPACE"]))
-    

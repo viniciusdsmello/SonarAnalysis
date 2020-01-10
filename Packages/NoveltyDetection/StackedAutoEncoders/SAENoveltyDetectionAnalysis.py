@@ -18,10 +18,12 @@ import string
 import json
 import multiprocessing
 
+from sklearn import metrics
+from sklearn import preprocessing
 from keras.utils import np_utils
 from sklearn.externals import joblib
 
-from NoveltyDetectionAnalysis import NoveltyDetectionAnalysis
+from Packages.NoveltyDetection.NoveltyDetectionAnalysis import NoveltyDetectionAnalysis
 from Functions.StackedAutoEncoders import StackedAutoEncoders
 
 from Functions.telegrambot import Bot
@@ -84,6 +86,7 @@ class SAENoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
         duration = str(timedelta(seconds=float(time.time() - startTime)))
         
         message = "Technique: {}\n".format(self.parameters['Technique'])
+        message = message + "Development Mode: {}\n".format(self.parameters['DevelopmentMode'])
         message = message + "Training Type: {}\n".format(trainingType)
         message = message + "Novelty Class: {}\n".format(self.class_labels[inovelty])
         message = message + "Hash: {}\n".format(self.model_hash)
