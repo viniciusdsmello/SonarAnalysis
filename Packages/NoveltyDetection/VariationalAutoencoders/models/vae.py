@@ -1,8 +1,9 @@
 from tensorflow.keras import Model, Input, Dense, Sequential
 
+
 class VariationalAutoencoder:
     def __init__(self):
-        tf.
+        pass
 
     # VAE model = encoder + decoder
     def create_encoder(self, latent_dim):
