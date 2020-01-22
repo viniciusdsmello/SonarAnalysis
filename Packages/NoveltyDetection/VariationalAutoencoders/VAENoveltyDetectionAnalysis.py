@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    This file contains the Novelty Detection Analysis with Stacked AutoEncoders
+    This file contains the Novelty Detection Analysis with Variational Autoencoders
     Author: Vinicius dos Santos Mello <viniciusdsmello@poli.ufrj.br>
 """
 import multiprocessing
@@ -41,8 +41,17 @@ class VAENoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
             self.trn_trgt[inovelty][self.trn_trgt[inovelty] > inovelty] = self.trn_trgt[inovelty][
                                                                               self.trn_trgt[inovelty] > inovelty] - 1
             self.trn_trgt_sparse[inovelty] = np_utils.to_categorical(self.trn_trgt[inovelty].astype(int))
+<<<<<<< HEAD
 
     def build_vae_models(self):
+=======
+            
+            if self.parameters["HyperParameters"]["classifier_output_activation_function"] in ["tanh"]:
+                self.trn_trgt_sparse[inovelty] = 2 * self.trn_trgt_sparse[inovelty] - np.ones(self.trn_trgt_sparse[inovelty].shape)
+            
+            
+    def create_vae_models(self):        
+>>>>>>> fab407b68ea05d2ad3ef5f08e80f7faa9bbac5b7
         for inovelty in range(self.all_trgt_sparse.shape[1]):
             # Initialize VAE objects for all novelties
             original_dim = self.all_data.shape[1]
