@@ -34,7 +34,7 @@ class Sampling(tf.keras.layers.Layer):
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
 
-class Encoder(tf.keras.layers.Layer):
+class Encoder(tf.keras.Model):
     def __init__(self, intermediate_dim, latent_dim, name='encoder', **kwargs):
         super(Encoder, self).__init__(name=name, **kwargs)
         # build encoder model
@@ -51,7 +51,7 @@ class Encoder(tf.keras.layers.Layer):
         return z_mean, z_log_var, z
 
 
-class Decoder(tf.keras.layers.Layer):
+class Decoder(tf.keras.Model):
     def __init__(self, intermediate_dim, original_dim, name='decoder', **kwargs):
         super(Decoder, self).__init__(name=name, **kwargs)
         # build decoder model
