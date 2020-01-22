@@ -1,3 +1,4 @@
+tensorflow
 absl-py==0.4.0
 astor==0.7.1
 backports-abc==0.5

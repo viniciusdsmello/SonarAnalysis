@@ -4,29 +4,18 @@
     This file contains the Novelty Detection Analysis with Stacked AutoEncoders
     Author: Vinicius dos Santos Mello <viniciusdsmello@poli.ufrj.br>
 """
-import os
-import sys
-import time
-from datetime import datetime, timedelta
-
-sys.path.insert(0, '..')
-
-import pickle
-import numpy as np
-import time
-import string
-import json
 import multiprocessing
+import os
+import time
+from datetime import timedelta
 
-from sklearn import metrics
-from sklearn import preprocessing
+import tensorflow as tf
 from keras.utils import np_utils
-from sklearn.externals import joblib
-
-from Packages.NoveltyDetection.NoveltyDetectionAnalysis import NoveltyDetectionAnalysis
-from Functions.StackedAutoEncoders import StackedAutoEncoders
+from sklearn import preprocessing
 
 from Functions.telegrambot import Bot
+from Packages.NoveltyDetection.NoveltyDetectionAnalysis import NoveltyDetectionAnalysis
+from .models.vae import VariationalAutoencoder
 
 my_bot = Bot("lisa_thebot")
 
@@ -36,57 +25,92 @@ num_processes = multiprocessing.cpu_count()
 class VAENoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
 
     def __init__(self, parameters=None, model_hash=None, load_hash=False, load_data=True, verbose=False):
-        super().__init__(parameters=parameters, model_hash=model_hash, load_hash=load_hash, load_data=load_data, verbose=verbose)
-        
+        super().__init__(parameters=parameters, model_hash=model_hash, load_hash=load_hash, load_data=load_data,
+                         verbose=verbose)
+
         self.trn_data = {}
         self.trn_trgt = {}
         self.trn_trgt_sparse = {}
-        self.VAE = {}
-        
+        self.vae_models = {}
+
+    def emulate_novelties(self):
+        # Divide the dataset to do a novelty class emulation
         for inovelty in range(self.all_trgt_sparse.shape[1]):
             self.trn_data[inovelty] = self.all_data[self.all_trgt != inovelty]
             self.trn_trgt[inovelty] = self.all_trgt[self.all_trgt != inovelty]
-            self.trn_trgt[inovelty][self.trn_trgt[inovelty] > inovelty] = self.trn_trgt[inovelty][self.trn_trgt[inovelty] > inovelty] - 1
+            self.trn_trgt[inovelty][self.trn_trgt[inovelty] > inovelty] = self.trn_trgt[inovelty][
+                                                                              self.trn_trgt[inovelty] > inovelty] - 1
             self.trn_trgt_sparse[inovelty] = np_utils.to_categorical(self.trn_trgt[inovelty].astype(int))
-            
-            if self.parameters["HyperParameters"]["classifier_output_activation_function"] in ["tanh"]:
-                self.trn_trgt_sparse[inovelty] = 2 * self.trn_trgt_sparse[inovelty] - np.ones(self.trn_trgt_sparse[inovelty].shape)
-            
-            
-    def createVAEModels(self):        
+
+    def build_vae_models(self):
         for inovelty in range(self.all_trgt_sparse.shape[1]):
             # Initialize VAE objects for all novelties
-            self.VAE[inovelty] = StackedAutoEncoders(parameters=self.parameters,
-                                                     save_path=self.getBaseResultsPath(),
-                                                     CVO=self.CVO,
-                                                     inovelty=inovelty, 
-                                                     verbose=self.verbose
-                                                     )
+            original_dim = self.all_data.shape[1]
+            intermediate_dim = int(self.parameters['HyperParameters']['IntermediateDimension'])
+            latent_dim = 2
+            self.vae_models[inovelty] = VariationalAutoencoder(original_dim, intermediate_dim, latent_dim)
 
-        return self.VAE
+        return self.vae_models
 
-    def train(self, model_hash="", inovelty=0, fineTuning=False, trainingType="normal", ifold=0, hidden_neurons=[1],
-              neurons_variation_step=50, layer=1, numThreads=num_processes):
-        startTime = time.time()
-        if fineTuning == False:
-            fineTuning = 0
+    def get_vae_model(self, inovelty):
+        return self.vae_models[inovelty]
+
+    def get_normalized_data(self, data, ifold, inovelty):
+        train_id, test_id = self.CVO[inovelty][ifold]
+
+        # Fit the scaler based on the training data
+        if self.parameters["HyperParameters"]["norm"] == 'mapstd':
+            scaler = preprocessing.StandardScaler().fit(self.trn_data[inovelty][train_id, :])
+        elif self.parameters["HyperParameters"]["norm"] == 'mapstd_rob':
+            scaler = preprocessing.RobustScaler().fit(self.trn_data[train_id, :])
+        elif self.parameters["HyperParameters"]["norm"] == 'mapminmax':
+            scaler = preprocessing.MinMaxScaler().fit(self.trn_data[train_id, :])
         else:
-            fineTuning = 1
+            return self.trn_data[inovelty]
+        norm_data = scaler.transform(data)
 
-        hiddenNeuronsStr = str(hidden_neurons[0])
-        if len(hidden_neurons) > 1:
-            for ineuron in hidden_neurons[1:]:
-                hiddenNeuronsStr = hiddenNeuronsStr + 'x' + str(ineuron)
-        packagePath = os.path.join(self.PACKAGE_PATH, "StackedAutoEncoders")
-        file_to_run = os.path.join(packagePath, "VAE_train.py")
-        sysCall = "python " + file_to_run + " --layer {0} --novelty {1} --finetunning {2} --threads {3} --type {4} --hiddenNeurons {5} --neuronsVariationStep {6} --modelhash {7}".format(
-            layer, inovelty, fineTuning, numThreads, trainingType, hiddenNeuronsStr, neurons_variation_step, model_hash)
-        print(sysCall)
-        os.system(sysCall)
-        duration = str(timedelta(seconds=float(time.time() - startTime)))
+        return norm_data
+
+    def train(self, inovelty, ifold):
+        model = self.get_vae_model(inovelty)
+
+        train_id, test_id = self.CVO[inovelty][ifold]
+        norm_train_data = self.get_normalized_data(self.trn_data[inovelty][train_id], ifold)
+        norm_test_data = self.get_normalized_data(self.trn_data[inovelty][test_id], ifold)
+
+        # Callbacks
+        early_stopping = tf.keras.callbacks.EarlyStopping(
+            monitor=self.parameters["callbacks"]["EarlyStopping"]["monitor"],
+            patience=self.parameters["callbacks"]["EarlyStopping"]["patience"],
+            verbose=self.verbose,
+            mode='auto')
+
+        csv_log_filename = f'pretraining.log'
+        csv_logger = tf.keras.callbacks.CSVLogger(os.path.join(self.getBaseResultsPath(), 'Logs', csv_log_filename))
+
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.parameters["HyperParameters"]["OptimizerAlgorithm"])
+        model.compile(loss=tf.keras.losses.mse,
+                      optimizer=optimizer,
+                      metrics=[tf.keras.losses.mse, tf.keras.losses.mae])
+        train_start_time = time.time()
+        init_trn_desc = model.fit(norm_train_data,
+                                  norm_train_data,
+                                  epochs=int(self.parameters["HyperParameters"]["pretraining_n_epochs"]),
+                                  # PRE-TRAINING
+                                  batch_size=self.parameters["HyperParameters"]["batch_size"],
+                                  callbacks=[early_stopping, csv_logger],
+                                  verbose=self.verbose,
+                                  validation_data=(norm_test_data,
+                                                   norm_test_data),
+                                  shuffle=True
+                                  )
+        duration = str(timedelta(seconds=float(time.time() - train_start_time)))
+        self.__notify_training_conclusion(duration, 'Pre-Training', inovelty)
+
+    def __notify_training_conclusion(self, duration, training_type, inovelty):
         message = "Technique: {}\n".format(self.parameters['Technique'])
         message += "Development Mode: {}\n".format(self.parameters['DevelopmentMode'])
-        message += "Training Type: {}\n".format(trainingType)
+        message += "Training Type: {}\n".format(training_type)
         message += "Novelty Class: {}\n".format(self.class_labels[inovelty])
         message += "Hash: {}\n".format(self.model_hash)
         message += "Duration: {}\n".format(duration)
@@ -94,16 +118,3 @@ class VAENoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
             my_bot.sendMessage(message)
         except Exception as e:
             print("Erro ao enviar mensagem. Erro: " + str(e))
-
-    def get_data_scaler(self, inovelty=0, ifold=0):
-        train_id, test_id = self.CVO[inovelty][ifold]
-
-        # normalize known classes
-        if self.parameters["HyperParameters"]["norm"] == "mapstd":
-            scaler = preprocessing.StandardScaler().fit(self.all_data[self.all_trgt!=inovelty][train_id,:])
-        elif self.parameters["HyperParameters"]["norm"] == "mapstd_rob":
-            scaler = preprocessing.RobustScaler().fit(self.all_data[self.all_trgt!=inovelty][train_id,:])
-        elif self.parameters["HyperParameters"]["norm"] == "mapminmax":
-            scaler = preprocessing.MinMaxScaler().fit(self.all_data[self.all_trgt!=inovelty][train_id,:])
-        
-        return scaler

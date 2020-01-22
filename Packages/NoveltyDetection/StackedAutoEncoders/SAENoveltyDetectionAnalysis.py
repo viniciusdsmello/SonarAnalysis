@@ -53,7 +53,7 @@ class SAENoveltyDetectionAnalysis(NoveltyDetectionAnalysis):
                 self.trn_trgt_sparse[inovelty] = 2 * self.trn_trgt_sparse[inovelty] - np.ones(self.trn_trgt_sparse[inovelty].shape)
             
             
-    def createSAEModels(self):        
+    def createSAEModels(self):
         for inovelty in range(self.all_trgt_sparse.shape[1]):
             # Initialize SAE objects for all novelties
             self.SAE[inovelty] = StackedAutoEncoders(parameters=self.parameters,
