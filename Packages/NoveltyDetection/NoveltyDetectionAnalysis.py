@@ -12,11 +12,13 @@ import sys
 sys.path.insert(0, '..')
 
 import time
-import string
 import json
+import string
 import hashlib
+import logging
 import multiprocessing
 import numpy as np
+
 from Packages.NoveltyDetection.setup import noveltyDetectionConfig
 from sklearn.externals import joblib
 from sklearn import metrics
@@ -24,9 +26,9 @@ from sklearn import model_selection
 from keras.utils import np_utils
 from Functions import DataHandler as dh
 
-
 class NoveltyDetectionAnalysis:
-    def __init__(self, parameters=None, model_hash=None, load_hash=False, load_data=True, verbose=True):
+    def __init__(self, parameters=None, model_hash=None, load_hash=False, load_data=True,
+                 verbose=True, logger_level='DEBUG'):
         self.parameters = parameters
         self.model_hash = model_hash
         self.load_hash = load_hash
@@ -37,6 +39,19 @@ class NoveltyDetectionAnalysis:
         self.all_trgt = None
         self.all_trgt_sparse = None
         self.class_labels = None
+
+        # Logging Config
+        if logger_level == 'DEBUG':
+            self.logger_level = logging.DEBUG
+        elif logger_level == 'INFO':
+            self.logger_level = logging.INFO
+        elif logger_level == 'WARNING':
+            self.logger_level = logging.WARNING
+        elif logger_level == 'ERROR':
+            self.logger_level = logging.ERROR
+        elif logger_level == 'CRITICAL':
+            self.logger_level = logging.CRITICAL
+        self.logger = self.get_logger()            
 
         # Enviroment variables
         self.DATA_PATH = noveltyDetectionConfig.CONFIG['OUTPUTDATAPATH']
@@ -63,6 +78,14 @@ class NoveltyDetectionAnalysis:
 
         # For multiprocessing purpose
         self.num_processes = multiprocessing.cpu_count()
+
+    def get_logger(self):
+        logger = logging.getLogger()
+        if logger.handlers:
+            for handler in self.logger.handlers:
+                logger.removeHandler(handler)
+        logging.basicConfig(level=self.logger_level)
+        return logger
 
     def setParameters(self, parameters=None):
         if (parameters == None):
