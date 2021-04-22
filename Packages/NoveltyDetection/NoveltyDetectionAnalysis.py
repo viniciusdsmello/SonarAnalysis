@@ -19,11 +19,12 @@ import logging
 import multiprocessing
 import numpy as np
 
+import tensorflow as tf
+
 from Packages.NoveltyDetection.setup import noveltyDetectionConfig
-from sklearn.externals import joblib
+import joblib
 from sklearn import metrics
 from sklearn import model_selection
-from keras.utils import np_utils
 from Functions import DataHandler as dh
 
 class NoveltyDetectionAnalysis:
@@ -82,7 +83,7 @@ class NoveltyDetectionAnalysis:
     def get_logger(self):
         logger = logging.getLogger()
         if logger.handlers:
-            for handler in self.logger.handlers:
+            for handler in logger.handlers:
                 logger.removeHandler(handler)
         logging.basicConfig(level=self.logger_level)
         return logger
@@ -187,7 +188,7 @@ class NoveltyDetectionAnalysis:
             print('[+] Time to read data file: ' + str(m_time) + ' seconds')
 
             # correct format
-            self.all_trgt_sparse = np_utils.to_categorical(self.all_trgt.astype(int))
+            self.all_trgt_sparse = tf.keras.utils.to_categorical(self.all_trgt.astype(int))
 
             # Same number of events in each class
             self.qtd_events_biggest_class = 0
@@ -222,13 +223,13 @@ class NoveltyDetectionAnalysis:
                 print("Total of events in the dataset is {:d}".format(self.all_trgt.shape[0]))
 
             if bool(self.parameters["InputDataConfig"]["balance_data"]):
-                print("Balacing data...")
+                print("Balancing data...")
                 self.balanceData()
 
             # turn targets in sparse mode
-            self.all_trgt_sparse = np_utils.to_categorical(self.all_trgt.astype(int))
+            self.all_trgt_sparse = tf.keras.utils.to_categorical(self.all_trgt.astype(int))
 
-            if self.parameters["HyperParameters"]["classifier_output_activation_function"] in ["tanh"]:
+            if self.parameters["HyperParameters"].get("classifier_output_activation_function", "") in ["tanh"]:
                 # Transform the output into [-1,1]
                 self.all_trgt_sparse = 2 * self.all_trgt_sparse - np.ones(self.all_trgt_sparse.shape)
             self.load_data = False
